@@ -1,4 +1,4 @@
-namespace ProblemSolvingCSharp;
+namespace ProblemSolvingCSharp.HackerRank;
 
 [TestClass]
 public class CatsandaMouse
