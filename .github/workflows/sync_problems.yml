@@ -9,40 +9,25 @@ jobs:
   update_metrics:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Calculate Solved Problems Recursively
+      - name: Calculate Solved Problems
         id: calc
         run: |
-          BASE_DIR="ProblemSolvingCSharp"
-          
-          COUNT=$(find $BASE_DIR -type f \( \
-            -path "*/CSES/*" -o \
-            -path "*/Gemini/*" -o \
-            -path "*/HackerRank/*" -o \
-            -path "*/LeetCode/*" -o \
-            -path "*/TakeUForward/*" \
-          \) \( -name "*.cs" -o -name "*.cpp" -o -name "*.py" -o -name "*.java" \) | wc -l)
-          
+          COUNT=$(find ProblemSolvingCSharp -type f \( -name "*.cs" -o -name "*.cpp" -o -name "*.py" -o -name "*.java" \) | wc -l)
           echo "TOTAL_SOLVED=$COUNT" >> $GITHUB_ENV
-          echo "Analyzed $BASE_DIR subfolders and found $COUNT solution files."
 
-      - name: Sync Solved Count to Portfolio
+      - name: Sync to Portfolio
         shell: pwsh
         run: |
-          # 1. AUTH (Standard Login)
           $loginBody = @{ username = "${{ secrets.PORTFOLIO_USERNAME }}"; password = "${{ secrets.PORTFOLIO_PASSWORD }}" } | ConvertTo-Json
-          $authResponse = Invoke-RestMethod -Method Post -Uri "https://yourdomain.com/api/auth/login" -ContentType "application/json" -Body $loginBody
-          $jwt = $authResponse.token
-
-          # 2. PARTIAL SYNC (Only sends problemsSolved)
-          $patchPayload = @{
-              problemsSolved = [int]${{ env.TOTAL_SOLVED }}
-          } | ConvertTo-Json
+          $authResponse = Invoke-RestMethod -Method Post -Uri "https://rushixdd.duckdns.org/api/auth/login" -ContentType "application/json" -Body $loginBody
+          
+          # 4. PARTIAL SYNC (Only sends problemsSolved)
+          $patchPayload = @{ problemsSolved = [int]${{ env.TOTAL_SOLVED }} } | ConvertTo-Json
 
           Invoke-RestMethod -Method Patch `
-              -Uri "https://yourdomain.com/api/telemetry/sync" `
-              -Headers @{ "Authorization" = "Bearer $jwt" } `
+              -Uri "https://rushixdd.duckdns.org/api/telemetry/sync" `
+              -Headers @{ "Authorization" = "Bearer $($authResponse.token)" } `
               -ContentType "application/json" `
               -Body $patchPayload
