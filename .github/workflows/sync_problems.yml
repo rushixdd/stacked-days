@@ -1,0 +1,41 @@
+name: Solve Analytics Sync
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  update_metrics:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Calculate Solved Problems
+        id: calc
+        run: |
+          # Count all files in the specific folders (excluding hidden files/folders)
+          # You can refine the extensions (e.g., -name "*.cs" -o -name "*.cpp")
+          COUNT=$(find CSES Gemini HackerRank LeetCode TakeUForward -type f | wc -l)
+          echo "TOTAL_SOLVED=$COUNT" >> $GITHUB_ENV
+          echo "Detected $COUNT solved problems."
+
+      - name: Sync Solved Count to Portfolio
+        shell: pwsh
+        run: |
+          # 1. AUTH (Standard Login)
+          $loginBody = @{ username = "${{ secrets.PORTFOLIO_USERNAME }}"; password = "${{ secrets.PORTFOLIO_PASSWORD }}" } | ConvertTo-Json
+          $authResponse = Invoke-RestMethod -Method Post -Uri "https://yourdomain.com/api/auth/login" -ContentType "application/json" -Body $loginBody
+          $jwt = $authResponse.token
+
+          # 2. PARTIAL SYNC (Only sends problemsSolved)
+          $patchPayload = @{
+              problemsSolved = [int]${{ env.TOTAL_SOLVED }}
+          } | ConvertTo-Json
+
+          Invoke-RestMethod -Method Patch `
+              -Uri "https://yourdomain.com/api/telemetry/sync" `
+              -Headers @{ "Authorization" = "Bearer $jwt" } `
+              -ContentType "application/json" `
+              -Body $patchPayload
