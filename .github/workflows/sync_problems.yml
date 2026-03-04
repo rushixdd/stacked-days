@@ -20,14 +20,10 @@ jobs:
       - name: Sync to Portfolio
         shell: pwsh
         run: |
-          $loginBody = @{ username = "${{ secrets.PORTFOLIO_USERNAME }}"; password = "${{ secrets.PORTFOLIO_PASSWORD }}" } | ConvertTo-Json
-          $authResponse = Invoke-RestMethod -Method Post -Uri "https://rushixdd.duckdns.org/api/auth/login" -ContentType "application/json" -Body $loginBody
-          
-          # 4. PARTIAL SYNC (Only sends problemsSolved)
-          $patchPayload = @{ problemsSolved = [int]${{ env.TOTAL_SOLVED }} } | ConvertTo-Json
+          $patchPayload = @{ problemsSolved = [int]${{ env.TOTAL_SOLVED }} } | ConvertTo-Json -Compress
 
           Invoke-RestMethod -Method Patch `
               -Uri "https://rushixdd.duckdns.org/api/telemetry/sync" `
-              -Headers @{ "Authorization" = "Bearer $($authResponse.token)" } `
+              -Headers @{ "X-Sync-Api-Key" = "${{ secrets.SYNC_API_KEY }}" } `
               -ContentType "application/json" `
               -Body $patchPayload
