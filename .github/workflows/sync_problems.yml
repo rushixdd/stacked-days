@@ -12,14 +12,21 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Calculate Solved Problems
+      - name: Calculate Solved Problems Recursively
         id: calc
         run: |
-          # Count all files in the specific folders (excluding hidden files/folders)
-          # You can refine the extensions (e.g., -name "*.cs" -o -name "*.cpp")
-          COUNT=$(find CSES Gemini HackerRank LeetCode TakeUForward -type f | wc -l)
+          BASE_DIR="ProblemSolvingCSharp"
+          
+          COUNT=$(find $BASE_DIR -type f \( \
+            -path "*/CSES/*" -o \
+            -path "*/Gemini/*" -o \
+            -path "*/HackerRank/*" -o \
+            -path "*/LeetCode/*" -o \
+            -path "*/TakeUForward/*" \
+          \) \( -name "*.cs" -o -name "*.cpp" -o -name "*.py" -o -name "*.java" \) | wc -l)
+          
           echo "TOTAL_SOLVED=$COUNT" >> $GITHUB_ENV
-          echo "Detected $COUNT solved problems."
+          echo "Analyzed $BASE_DIR subfolders and found $COUNT solution files."
 
       - name: Sync Solved Count to Portfolio
         shell: pwsh
